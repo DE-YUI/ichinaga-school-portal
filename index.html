@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <title>市立長野中学校 生徒ポータル</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <style>
+    body { font-family: sans-serif; max-width: 600px; margin: 2rem auto; background: #f5f5f5; }
+    h1 { text-align: center; color: #333; }
+    .card { background: white; padding: 1.5rem; margin: 1rem 0; border-radius: 12px; box-shadow: 0 2px 6px rgba(0,0,0,0.1); }
+    input, textarea, button { width: 100%; padding: 0.6rem; margin: 0.5rem 0; border-radius: 8px; border: 1px solid #ccc; }
+    button { background: #0066cc; color: white; font-weight: bold; cursor: pointer; }
+    button:hover { background: #004999; }
+    #memo-list { margin-top: 1rem; }
+    .memo { padding: 0.8rem; border-bottom: 1px solid #ddd; }
+  </style>
+</head>
+<body>
+  <h1>📘 市立長野中学校 生徒ポータル</h1>
+
+  <!-- ログイン / 登録 -->
+  <div class="card" id="auth-card">
+    <h2>ログイン / 新規登録</h2>
+    <input type="email" id="email" placeholder="メールアドレス">
+    <input type="password" id="password" placeholder="パスワード">
+    <button id="registerBtn">新規登録</button>
+    <button id="loginBtn">ログイン</button>
+  </div>
+
+  <!-- メモエリア -->
+  <div class="card" id="memo-card" style="display:none;">
+    <h2>学習メモ</h2>
+    <textarea id="memo-text" rows="3" placeholder="今日の学習内容を記録しよう"></textarea>
+    <button id="saveMemoBtn">メモを保存</button>
+    <div id="memo-list"></div>
+    <button id="logoutBtn" style="background:#cc0000;">ログアウト</button>
+  </div>
+
+  <!-- Firebase 初期化 -->
+  <script type="module">
+    // Firebase SDK 読み込み
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.14.0/firebase-app.js";
+    import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.14.0/firebase-auth.js";
+    import { getFirestore, collection, addDoc, query, where, getDocs } from "https://www.gstatic.com/firebasejs/10.14.0/firebase-firestore.js";
+
+    // 🔹 あなたの firebaseConfig を貼り付けてください
+    const firebaseConfig = {
+      apiKey: "ここにAPIキー",
+      authDomain: "ここにauthDomain",
+      projectId: "ここにprojectId",
+      storageBucket: "ここにstorageBucket",
+      messagingSenderId: "ここにID",
+      appId: "ここにappId"
+    };
+
+    // 初期化
+    const app = initializeApp(firebaseConfig);
+    const auth = getAuth(app);
+    const db = getFirestore(app);
+
+    // DOM 取得
+    const emailInput = document.getElementById("email");
+    const passwordInput = document.getElementById("password");
+    const registerBtn = document.getElementById("registerBtn");
+    const loginBtn = document.getElementById("loginBtn");
+    const logoutBtn = document.getElementById("logoutBtn");
+    const memoCard = document.getElementById("memo-card");
+    const authCard = document.getElementById("auth-card");
+    const memoText = document.getElementById("memo-text");
+    const saveMemoBtn = document.getElementById("saveMemoBtn");
+    const memoList = document.getElementById("memo-list");
+
+    // 🔹 新規登録
+    registerBtn.addEventListener("click", async () => {
+      try {
+        await createUserWithEmailAndPassword(auth, emailInput.value, passwordInput.value);
+        alert("登録完了しました！");
+      } catch (e) {
+        alert("登録エラー: " + e.message);
+      }
+    });
+
+    // 🔹 ログイン
+    loginBtn.addEventListener("click", async () => {
+      try {
+        await signInWithEmailAndPassword(auth, emailInput.value, passwordInput.value);
+        alert("ログインしました！");
+      } catch (e) {
+        alert("ログインエラー: " + e.message);
+      }
+    });
+
+    // 🔹 ログアウト
+    logoutBtn.addEventListener("click", async () => {
+      await signOut(auth);
+    });
+
+    // 🔹 認証状態の監視
+    onAuthStateChanged(auth, async (user) => {
+      if (user) {
+        authCard.style.display = "none";
+        memoCard.style.display = "block";
+        loadMemos(user.uid);
+      } else {
+        authCard.style.display = "block";
+        memoCard.style.display = "none";
+      }
+    });
+
+    // 🔹 メモ保存
+    saveMemoBtn.addEventListener("click", async () => {
+      const user = auth.currentUser;
+      if (!user) return;
+      if (memoText.value.trim() === "") return;
+      await addDoc(collection(db, "notes"), {
+        uid: user.uid,
+        content: memoText.value,
+        timestamp: new Date()
+      });
+      memoText.value = "";
+      loadMemos(user.uid);
+    });
+
+    // 🔹 メモ読み込み
+    async function loadMemos(uid) {
+      memoList.innerHTML = "";
+      const q = query(collection(db, "notes"), where("uid", "==", uid));
+      const querySnapshot = await getDocs(q);
+      querySnapshot.forEach((doc) => {
+        const data = doc.data();
+        const div = document.createElement("div");
+        div.className = "memo";
+        div.textContent = `${data.timestamp.toDate ? data.timestamp.toDate().toLocaleString() : ""} - ${data.content}`;
+        memoList.appendChild(div);
+      });
+    }
+  </script>
+</body>
+</html>
