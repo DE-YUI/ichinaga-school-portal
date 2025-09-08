@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>市立長野中学校 生徒ポータル</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      margin: 0;
+      padding: 0;
+      background-color: #f2f2f2;
+    }
+    header {
+      background-color: #0066cc;
+      color: white;
+      padding: 1em;
+      text-align: center;
+    }
+    main {
+      padding: 2em;
+    }
+    .login-section {
+      max-width: 400px;
+      margin: 2em auto;
+      padding: 2em;
+      background-color: white;
+      border-radius: 8px;
+      box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+    }
+    input {
+      width: 100%;
+      padding: 0.5em;
+      margin: 0.5em 0;
+      box-sizing: border-box;
+    }
+    button {
+      width: 100%;
+      padding: 0.7em;
+      margin-top: 1em;
+      background-color: #0066cc;
+      color: white;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+    }
+    button:hover {
+      background-color: #005bb5;
+    }
+    #message {
+      margin-top: 1em;
+      color: red;
+      font-weight: bold;
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>市立長野中学校 生徒ポータル</h1>
+  </header>
+
+  <main>
+    <div class="login-section">
+      <h2>ログイン</h2>
+      <input type="email" id="email" placeholder="メールアドレス">
+      <input type="password" id="password" placeholder="パスワード">
+      <button id="loginBtn">ログイン</button>
+      <div id="message"></div>
+    </div>
+  </main>
+
+  <!-- Firebase v9 modules -->
+  <script type="module">
+    // Firebase SDK の読み込み
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-app.js";
+    import { getAuth, signInWithEmailAndPassword } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-auth.js";
+
+    // Firebase 設定（あなたが渡してくれた値）
+    const firebaseConfig = {
+      apiKey: "AIzaSyDhw2AZw8dq1DwywWExyw4bNaf-8qdWq7w",
+      authDomain: "ichinaga-school-portal.firebaseapp.com",
+      projectId: "ichinaga-school-portal",
+      storageBucket: "ichinaga-school-portal.firebasestorage.app",
+      messagingSenderId: "79417995177",
+      appId: "1:79417995177:web:a76c19055e0709051c5eb8"
+    };
+
+    // Firebase 初期化
+    const app = initializeApp(firebaseConfig);
+    const auth = getAuth(app);
+
+    // ログインボタンの処理
+    const loginBtn = document.getElementById('loginBtn');
+    const emailInput = document.getElementById('email');
+    const passwordInput = document.getElementById('password');
+    const messageDiv = document.getElementById('message');
+
+    loginBtn.addEventListener('click', async () => {
+      const email = emailInput.value;
+      const password = passwordInput.value;
+      messageDiv.textContent = '';
+
+      if (!email || !password) {
+        messageDiv.textContent = 'メールアドレスとパスワードを入力してください';
+        return;
+      }
+
+      try {
+        const userCredential = await signInWithEmailAndPassword(auth, email, password);
+        const user = userCredential.user;
+        messageDiv.style.color = 'green';
+        messageDiv.textContent = `ログイン成功！ようこそ、${user.email}さん`;
+        // ここにログイン後の処理を追加可能
+      } catch (error) {
+        messageDiv.style.color = 'red';
+        messageDiv.textContent = 'ログインに失敗しました: ' + error.message;
+      }
+    });
+  </script>
+</body>
+</html>
